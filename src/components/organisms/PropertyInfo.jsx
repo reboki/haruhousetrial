@@ -30,7 +30,7 @@ export const PropertyInfo = () => {
 
 const Info = styled.div`
   background-color: #faf3e0;
-  height: 1200px;
+  height: 925px;
 `;
 
 const CardGrid = styled.div`
