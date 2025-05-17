@@ -1,3 +1,4 @@
+// src/components/ReservationSection.jsx
 import React, { useState } from "react";
 import styled from "styled-components";
 
@@ -60,17 +61,28 @@ export const ReservationSection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault(); // ページリロードを止める
     const form = e.target;
-
-    // FormData を URL エンコード形式に変換
-    const body = new URLSearchParams(new FormData(form)).toString();
+    const formData = new FormData(form);
+    const body = new URLSearchParams(formData).toString();
 
     try {
-      // ルート path へ POST
+      // 1) Netlify Forms へ送信
       await fetch("/", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
       });
+
+      // 2) Apps Script（Google Sheets）へ送信
+      const sheetBody = new URLSearchParams({
+        ...Object.fromEntries(formData),
+        secret: process.env.REACT_APP_FORM_SECRET,
+      }).toString();
+      await fetch(process.env.REACT_APP_SHEET_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: sheetBody,
+      });
+
       // 成功したらフラグを立てる
       setSubmitted(true);
     } catch (err) {
@@ -98,6 +110,13 @@ export const ReservationSection = () => {
       data-netlify-honeypot="bot-field"
       onSubmit={handleSubmit}
     >
+      {/* Apps Script 用シークレット */}
+      <input
+        type="hidden"
+        name="secret"
+        value={process.env.REACT_APP_FORM_SECRET}
+      />
+
       {/* Netlify用 hidden */}
       <input type="hidden" name="form-name" value="contact" />
       {/* スパムbot用ダミー */}
