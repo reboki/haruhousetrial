@@ -2,9 +2,9 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 
-// styled-components の定義
+// styled-components定義
 const Form = styled.form`
-  /* あなた好みのスタイル */
+  /* お好みのスタイル */
 `;
 const Field = styled.label`
   display: block;
@@ -34,8 +34,6 @@ const Button = styled.button`
   border: none;
   border-radius: 4px;
 `;
-
-// サンクスメッセージ用の styled-components
 const ThanksMessage = styled.div`
   max-width: 600px;
   margin: 2rem auto;
@@ -54,36 +52,26 @@ const ThanksMessage = styled.div`
 `;
 
 export const ReservationSection = () => {
-  // 送信済みフラグ
   const [submitted, setSubmitted] = useState(false);
 
-  // フォーム送信時の処理
   const handleSubmit = async (e) => {
-    e.preventDefault(); // ページリロードを止める
+    e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
-    const body = new URLSearchParams(formData).toString();
+
+    // Sheets 用の POST ボディ
+    const sheetBody = new URLSearchParams({
+      ...Object.fromEntries(formData),
+      secret: process.env.REACT_APP_FORM_SECRET,
+    }).toString();
 
     try {
-      // 1) Netlify Forms へ送信
-      await fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
-      });
-
-      // 2) Apps Script（Google Sheets）へ送信
-      const sheetBody = new URLSearchParams({
-        ...Object.fromEntries(formData),
-        secret: process.env.REACT_APP_FORM_SECRET,
-      }).toString();
+      // Google Sheets（Apps Script）へ送信
       await fetch(process.env.REACT_APP_SHEET_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: sheetBody,
       });
-
-      // 成功したらフラグを立てる
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -91,7 +79,6 @@ export const ReservationSection = () => {
     }
   };
 
-  // 送信後はメッセージを返す
   if (submitted) {
     return (
       <ThanksMessage>
@@ -101,31 +88,15 @@ export const ReservationSection = () => {
     );
   }
 
-  // 通常のフォーム
   return (
-    <Form
-      name="contact"
-      method="POST"
-      data-netlify="true"
-      data-netlify-honeypot="bot-field"
-      onSubmit={handleSubmit}
-    >
-      {/* Apps Script 用シークレット */}
+    <Form onSubmit={handleSubmit}>
+      {/* Apps Script 用のシークレット */}
       <input
         type="hidden"
         name="secret"
         value={process.env.REACT_APP_FORM_SECRET}
       />
 
-      {/* Netlify用 hidden */}
-      <input type="hidden" name="form-name" value="contact" />
-      {/* スパムbot用ダミー */}
-      <Field style={{ display: "none" }}>
-        <span>Don’t fill this out if you’re human:</span>
-        <Input name="bot-field" />
-      </Field>
-
-      {/* 以下、通常フィールド */}
       <Field>
         <span>お名前</span>
         <Input type="text" name="name" required placeholder="はるき" />
@@ -143,9 +114,6 @@ export const ReservationSection = () => {
         <span>お問い合わせ内容</span>
         <Textarea name="message" required placeholder="メッセージをどうぞ…" />
       </Field>
-
-      {/* Netlify reCAPTCHA */}
-      <div data-netlify-recaptcha="true"></div>
 
       <Button type="submit">送信する</Button>
     </Form>
